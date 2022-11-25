@@ -1,0 +1,31 @@
+[
+ 
+    {
+      "id": "01",
+      "name": "Business & Management"
+    },
+    {
+      "id": "02",
+      "name": "Computer Science"
+    },
+    {
+      "id": "03",
+      "name": "Teaching"
+    },
+    {
+      "id": "04",
+      "name": "History"
+    },
+    {
+      "id": "05",
+      "name": "Literature"
+    },
+    {
+      "id": "06",
+      "name": "Language"
+    },
+    {
+      "id": "00",
+      "name": "All Courses"
+    }
+  ]
