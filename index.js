@@ -23,6 +23,7 @@ async function run() {
 
         const usedProductsCollection = client.db('UsedCar').collection('products');
         const usersCollection = client.db('UsedCar').collection('users');
+        const bookingCollection = client.db('UsedCar').collection('booking');
 
 
         // getting all the used products
@@ -42,7 +43,7 @@ async function run() {
         })
 
         // Send Token adn Save User
-        app.put('/users/:email', async (req, res) => {
+        app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
             const filter = { email: email };
@@ -54,10 +55,37 @@ async function run() {
             };
             const result = await usersCollection.updateOne(filter, updateDoc, options);
 
-            const token = JsonWebTokenError
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+            res.send({ result, token })
         })
 
+        // Adding Booking Collection to the db
+        app.post('/booking', async (req, res) => {
+            const booking = req.body;
+            const query = {
+                carName: booking.carName,
+            }
+            const alreadyBooked = await bookingCollection.find(query).toArray();
+            if (alreadyBooked.length) {
+                const message = `You already booked this ${booking.carName}`;
+                return res.send({ acknowledge: false, message })
+            }
+            const result = await bookingCollection.insertOne(booking);
+            res.send(result)
+        })
+
+        // getting all the booking by user
+        app.get('/booking', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const bookings = await bookingCollection.find(query).toArray();
+            res.send(bookings)
+        })
+
+
     }
+
+
     finally {
 
     }
