@@ -33,6 +33,22 @@ async function run() {
             res.send(result)
         })
 
+        // add used cars or products to database
+        app.post('/products', async (req, res) => {
+            const products = req.body;
+            const result = await usedProductsCollection.insertOne(products);
+            res.send(result)
+        })
+
+        // get products by user
+        app.get('/products', async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+            const filter = { email: email };
+            const result = await usedProductsCollection.find(filter).toArray();
+            res.send(result)
+        })
+
 
         // getting all category products
         app.get('/category/:id', async (req, res) => {
@@ -50,14 +66,66 @@ async function run() {
             const options = { upsert: true };
             const updateDoc = {
                 $set: {
-                    user,
+                    role: user.role,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL
                 }
             };
+            console.log(updateDoc);
             const result = await usersCollection.updateOne(filter, updateDoc, options);
 
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
-            res.send({ result, token })
+            res.send({ result, token });
+
         })
+
+        // get all the user
+        app.get('/users', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const users = await usersCollection.find(query).toArray();
+            res.send(users)
+        })
+
+        // get all sellers
+        app.get('/allsellers', async (req, res) => {
+            const query = { role: 'Seller' };
+            const result = await usersCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        // // get all buyers
+        app.get('/allbuyers', async (req, res) => {
+            const query = { role: 'Buyer' };
+            const result = await usersCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        // Deleting a Seller 
+        app.delete('/allsellers/:email', async (req, res) => {
+            const email = req.params.email;
+            console.log(email)
+            const query = { email: email };
+            const result = await usersCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // Updating a seller 
+        app.put('/allsellers', async (req, res) => {
+            const email = req.query.email;
+            const status = req.body;
+            console.log(status, email)
+            const filter = { email: email };
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    status,
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        })
+
 
         // Adding Booking Collection to the db
         app.post('/booking', async (req, res) => {
