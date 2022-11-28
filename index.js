@@ -6,7 +6,7 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
+const ObjectID = require('mongodb').ObjectID;
 
 // middle ware
 app.use(cors());
@@ -43,15 +43,59 @@ async function run() {
         const bookingCollection = client.db('UsedCar').collection('booking');
         const advertisedProductsCollection = client.db('UsedCar').collection('advertisedProducts');
         const paymentCollection = client.db('UsedCar').collection('payments');
+        const reportsCollection = client.db('UsedCar').collection('reports');
 
         // getting all the used products
         app.get('/used-cars', async (req, res) => {
-            const usedcars = {};
-            const result = await usedProductsCollection.find(usedcars).toArray();
+            const usedCars = await usedProductsCollection.find({}).toArray();
             const paidProduct = await paymentCollection.find({}).toArray();
-            console.log(paidProduct);
-            res.send(result)
+
+            // const remainingPaidProducts = paidProduct.forEach(product => {
+            //     const unpaidProducts = usedCars.filter(car => car.name !== product.carName);
+            //     console.log(unpaidProducts.length)
+            //     if (unpaidProducts.length > 0) {
+            //         return res.send(unpaidProducts)
+            //     }
+            //     else {
+            //         return ({ message: '' })
+            //     }
+            // })
+
+            const remainingCars = usedCars.filter(car => {
+                return paidProduct.findIndex(product => product.selectedCarId === car._id.toString()) === -1; // for mongodb Object car._id.toString();
+            });
+            res.send(remainingCars)
         })
+
+
+
+        // filter sold out and remaining products
+        // app.get('/used-cars', async (req, res) => {
+        //     const allUsedCars = await usedProductsCollection.find({}).toArray();
+        //     const remainingAfterSold = allUsedCars.filter(car => car.sold != 'Sold');
+        //     if (remainingAfterSold.length > 0) {
+        //         return res.send(remainingAfterSold)
+        //     }
+        //     res.send(allUsedCars)
+        // })
+
+
+        // Update One products after sold
+
+        // app.put('/used-cars/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: ObjectId(id) }
+        //     const status = req.body.itemSold.isSold;
+        //     const options = { upsert: true };
+        //     const updateDoc = {
+        //         $set: {
+        //             sold: status
+        //         }
+        //     }
+        //     const result = await usedProductsCollection.updateOne(filter, updateDoc, options);
+        //     res.send(result)
+        // })
+
 
         // add used cars or products to database
         app.post('/products', async (req, res) => {
@@ -285,6 +329,54 @@ async function run() {
             const updatedResult = await bookingCollection.updateOne(filter, updateDoc);
             res.send(result)
         })
+
+        // add report to the db
+        app.put('/report/:id', async (req, res) => {
+            const id = req.params.id;
+            const report = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    id: report._id,
+                    name: report.name,
+                    originalPrice: report.originalPrice,
+                    resalePrice: report.resalePrice,
+                    quality: report.quality,
+                    phone: report.phone,
+                    location: report.location,
+                    description: report.description,
+                    YearsOfUse: report.YearsOfUse,
+                    postedTime: report.postedTime,
+                    img: report.img,
+                    sellersName: report.sellersName,
+                    email: report.email,
+                    category: report.category,
+                    categoryId: report.categoryId
+
+                }
+            };
+            const result = await reportsCollection.updateOne(filter, updateDoc, options);
+
+            res.status(403).send(result)
+        })
+
+        // get all the reports
+        app.get('/report', async (req, res) => {
+            const reports = await reportsCollection.find({}).toArray();
+            res.send(reports)
+        })
+
+        // deleting a report
+        app.delete('/report/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await reportsCollection.deleteOne(query);
+            res.send(result)
+        })
+
+
+
     }
 
 
